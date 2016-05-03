@@ -40,6 +40,7 @@ from bakhanapp.models import Chapter
 from bakhanapp.models import Topic
 from bakhanapp.models import Subtopic
 from bakhanapp.models import Subtopic_Skill
+from bakhanapp.models import Institution
 
 import datetime
 
@@ -81,7 +82,7 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
-                    filename='/var/www/html/bakhanproyecto/populate.log',
+                    filename='populate\management\commands\populate.log',
                     filemode='w')
 logging.debug('A debug message')
 logging.info('Some information')
@@ -94,7 +95,7 @@ def create_callback_server():
     class CallbackHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         def do_GET(self):
             global VERIFIER
-            print "kk"
+            logging.debug("kk")
             params = cgi.parse_qs(self.path.split('?', 1)[1],
                 keep_blank_values=False)
             VERIFIER = params['oauth_verifier'][0]
@@ -144,14 +145,14 @@ def run_tests(identifier,passw, CONSUMER_KEY, CONSUMER_SECRET):
         params={'oauth_callback': SERVER_URL +'/api/auth/default_callback'}) #'http://%s:%d/' %
             #(CALLBACK_BASE, callback_server.server_address[1])})
 
-    print request_token
-    print secret_request_token
+    logging.debug(request_token)
+    logging.debug(secret_request_token)
     
     noClickParams = {'oauth_token':request_token, 'identifier':identifier, 'password':passw}
     
     # 2. Authorize your request token.
     authorize_url = service.get_authorize_url(request_token)
-    print authorize_url
+    logging.debug(authorize_url)
 
     #webbrowser.open(authorize_url) #Abre ventana para hacer click en aceptar y loguearse
 
@@ -176,15 +177,15 @@ def run_tests(identifier,passw, CONSUMER_KEY, CONSUMER_SECRET):
     #print r.status_code
 
     r = requests.post(post_url, data=noClickParams)
-    print r.url
+    logging.debug(r.url)
     
-    print r.text
-    print r.status_code
+    logging.debug(r.text)
+    logging.debug(r.status_code)
     #print r
     access_url = urlparse.parse_qs(urlparse.urlparse(r.url).query)
     oauth_verifier_raw = access_url["oauth_verifier"][0]
     oauth_verifier = oauth_verifier_raw.encode('ascii','ignore')
-    print oauth_verifier
+    logging.debug(oauth_verifier)
     #callback_server.handle_request() #Esto esperaba el click de aceptar
     callback_server.server_close()
 
@@ -196,7 +197,7 @@ def run_tests(identifier,passw, CONSUMER_KEY, CONSUMER_SECRET):
     #print
     #while(True):
     #    get_api_resource(session)
-    print session
+    logging.debug(session)
     return session
 
 def getTopictree():
@@ -218,7 +219,7 @@ def getTopictree():
                         temp.append(topic)
                         temp.append(subtopic)
                         temp.append(skill)
-                        print(chapter.id_chapter_name+" - "+topic.id_topic_name+" + "+subtopic.id_subtopic_name+" * "+skill.name_spanish)
+                        logging.debug(chapter.id_chapter_name+" - "+topic.id_topic_name+" + "+subtopic.id_subtopic_name+" * "+skill.name_spanish)
                         topictree.append(temp)
                         temp=[]
     return topictree
@@ -351,7 +352,7 @@ def poblar_topictree(session,buscar, reemplazar):
                 skills = get_api_resource2(session,"/api/v1/topic/"+data_topictree["children"][1]["children"][i]["children"][j]["children"][k]["slug"]+"/exercises",SERVER_URL2)
                 data_skills = simplejson.loads(skills)
                 for p in range(len(data_skills)):
-                    print data_skills[p]["translated_title"]
+                    logging.debug(data_skills[p]["translated_title"])
                     Skill.objects.filter(id_skill_name=data_skills[p]["content_id"]).update(name_spanish=data_skills[p]["translated_title"])
                 '''cant_videos = len(data_topictree["children"][1]["children"][i]["children"][j]["children"][k]["child_data"])
                 print cant_videos
@@ -466,9 +467,9 @@ def coach_students(session): #ver los estudiantes que tienen como coach a cierto
     data = simplejson.loads(source)
     #with open('data.txt', 'w') as outfile:
     #    json.dump(data, outfile)
-    print len(data)
+    logging.debug(len(data))
     for j in range(len(data)):
-        print data[j]["username"]
+        logging.debug(data[j]["username"])
 
 def poblar_students(session):
     # Open the workbook and select the first worksheet
@@ -496,36 +497,42 @@ def poblar_students(session):
                 
      
         students_list.append(student)
-        print students_list[rownum-1]['points']
+        logging.debug(students_list[rownum-1]['points'])
      
     # Serialize the list of dicts to JSON
     j = json.dumps(students_list)
             
 
-def threadPopulate(students,i,dates,session):
+def threadPopulate(students,dates,session):
     """thread populate function"""
     semafaro.acquire()
     try:
-        poblar_student_skill(students[i].kaid_student, dates, session) #listo
+        poblar_student_skill(students.kaid_student, dates, session) #listo
     except:
-        print "error student_skill ", students[i].name
+        msg="error student_skill " + students.name
+        logging.debug(msg)
     try:
-        poblar_skill_attempts(students[i].name,students[i].kaid_student, dates, session) #listo
+        poblar_skill_attempts(students.name,students.kaid_student, dates, session) #listo
     except:
-        print "error student_attempts ", students[i].name
+        msg = "error student_attempts "+students.name
+        logging.debug(msg)
     try:
-        poblar_skill_progress(students[i].name,students[i].kaid_student, dates, session) #listo
+        poblar_skill_progress(students.name,students.kaid_student, dates, session) #listo
     except:
-        print "error student_progress ", students[i].name
+        msg="error student_progress "+ students.name
+        logging.debug(msg)
     try:
-        poblar_student_video(students[i].name,students[i].kaid_student, dates, session) #listo
+        poblar_student_video(students.name,students.kaid_student, dates, session) #listo
     except:
-        print "error student_video ", students[i].name
+        msg="error student_video "+ students.name
+        logging.debug(msg)
     try:
-        poblar_video_playing(students[i].name,students[i].kaid_student, dates, session)
+        poblar_video_playing(students.name,students.kaid_student, dates, session)
     except:
-        print "error video_playing ", students[i].name
-    print threading.currentThread().getName(), "Terminado"
+        msg="error video_playing "+ students.name
+        logging.debug(msg)
+    msg = threading.currentThread().getName() + "Terminado"
+    logging.debug(msg)
     semafaro.release()
     return
 
@@ -536,23 +543,28 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         #CONSUMER_KEY = 'AStAffVHzEtpSFJ3' #clave generada para don UTPs
         #CONSUMER_KEY = '8Bn3UyhPHamgCvGN' #Clave para LeonardoMunoz esc Alabama
-        keys = ['AStAffVHzEtpSFJ3','8Bn3UyhPHamgCvGN']
+        #keys = ['AStAffVHzEtpSFJ3','8Bn3UyhPHamgCvGN']
         #CONSUMER_SECRET = 'UEQj2XKfGpFSMpNh' #clave generada para don UTPs
         #CONSUMER_SECRET  = '2zcpyDHnfTd5VWz9' #secret para LeonardoMunoz esc Alabama
-        secrets = ['UEQj2XKfGpFSMpNh','2zcpyDHnfTd5VWz9']
+        #secrets = ['UEQj2XKfGpFSMpNh','2zcpyDHnfTd5VWz9']
         #passw='clave1234'
         #identifier='utpbakhan'
         #passw='CONTRASENA'
         #identifier='LeonardoMunoz'
-        identifiers = ['utpbakhan','LeonardoMunoz']
-        passes = ['clave1234', 'CONTRASENA']
+        #identifiers = ['utpbakhan','LeonardoMunoz']
+        #passes = ['clave1234', 'CONTRASENA']
 
         #meter los parametros anteriores en alguna parte de la base de datos
 
-        
-        for i in range(len(keys)):
+        institution = Institution.objects.all()
 
-            session = run_tests(identifiers[i],passes[i],keys[i],secrets[i])
+        for inst in institution:
+            keys = inst.key
+            secrets = inst.secret
+            identifiers = inst.identifier
+            passes = inst.password
+
+            session = run_tests(identifiers,passes,keys,secrets)
             #print "logueadoooo"
             #jason = get_api_resource2(session,"/api/v1/exercises",SERVER_URL2)
             #source = unicode(jason, 'ISO-8859-1')
@@ -563,19 +575,21 @@ class Command(BaseCommand):
             #cur = conn.cursor()
             #kaid_student = "kaid_485871758161384306203631"
 
-            today = time.strftime("%Y-%m-%d")
-            yesterday = datetime.datetime.strftime(datetime.datetime.now()-datetime.timedelta(1),'%Y-%m-%d')
+            today = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            today = today.replace(":","%3A")
+            #yesterday = datetime.datetime.strftime(datetime.datetime.now()-datetime.timedelta(1),'%Y-%m-%d')
+            #instituto = Institution.objects.get(id_institution= i)
+            yesterday = inst.last_load
 
-            #coach_students(session)
-            #poblar_students(session)
+            inst.last_load = today
+            inst.save()
 
-            print "hoy: ", today
-            print "ayer: ", yesterday
-            dates = yesterday+"T00%3A00%3A00Z&dt_end="+today+"T00%3A00%3A00Z"
-
+            msg="hoy: " + today
+            logging.debug(msg)
+            msg="ayer: " + yesterday
+            logging.debug(msg)
+            dates = yesterday+"&dt_end="+today
             #dates = "2016-04-23T00%3A00%3A00Z&dt_end=2016-04-24T00%3A00%3A00Z"  
-
-
 
             '''
             chapter = Chapter.objects.all()
@@ -614,36 +628,22 @@ class Command(BaseCommand):
             video_playings = Video_Playing.objects.all()
             video_playings.delete()
             '''
-            #coach_students(session)
-
-
-            #hacer queries para obtener los estudiantes del establecimiento correspondiente
 
             threads = []
-            students = Student.objects.all()
+            #students = Student.objects.all()
+            students = Student.objects.filter(kaid_student__in=Student_Class.objects.filter(id_class_id__in=Class.objects.filter(id_institution_id=inst.id_institution).values("id_class")).values("kaid_student_id"))
 
-            if (i==0):
-                for i in range(len(students)-51):
-                    #print i
-                    #print students[i].name
-                    t = threading.Thread(target=threadPopulate,args=(students,i,dates,session))
-                    threads.append(t)
-                    t.start()
-            else:
-                for i in range((len(students)-51),len(students)):
-                    #print i
-                    #print students[i].name
-                    t = threading.Thread(target=threadPopulate,args=(students,i,dates,session))
-                    threads.append(t)
-                    t.start()
-            
             '''
-            for i in range(len(students)):
-                #print i
+            t = threading.Thread(target=threadPopulate,args=(students,i,dates,session))
+            threads.append(t)
+            t.start()
+
+            '''
+            for i in students:
                 #print students[i].name
-                t = threading.Thread(target=threadPopulate,args=(students,i,dates,session))
+                t = threading.Thread(target=threadPopulate,args=(i,dates,session))
                 threads.append(t)
-                t.start()'''
+                t.start()
                 
-            #print "Todos los threads lanzados"
+            #print "Todos los threads lanzados" antes 22047
 
