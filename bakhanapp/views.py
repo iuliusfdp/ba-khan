@@ -66,7 +66,98 @@ import random
 import datetime
 import threading
 import Queue
+from datetime import datetime
+from django.http import HttpResponse
+import django_excel as excel
+import pyexcel as pe
+import pyexcel.ext.xls
 
+
+@login_required()
+def generateAssesmentExcel(request, id_assesment):
+    request.session.set_expiry(timeSleep)
+    if request.method == 'GET':
+        #args = request.POST
+        #id_assesment = args['id_assesment']
+        #id_assesment = 19
+        infoAssesment = Assesment.objects.filter(id_assesment=id_assesment)
+        
+        #funcion que genera el excel de una evaluacion
+        #variables
+        
+        delta = 7
+        viewFields = ['Estudiante','Recomendadas Completadas','Ejercicios Incorrectos',
+            'Ejercicios Correctos','Tiempo en Ejercicios','Tiempo en Videos',
+            'En Dificultad','Practicado','Nivel 1','Nivel 2','Dominado',
+            'Nota','Bonificacion por esfuerzo']
+        totalFields = len(viewFields)
+        #carga al arreglo los datos de la evaluacion id_assesment
+        try:
+            assesment = Assesment.objects.get(id_assesment=id_assesment)
+            grades = Student.objects.filter(grade__id_assesment_id=id_assesment
+                ).values('name','grade__grade',
+                'grade__bonus_grade','grade__recomended_complete','grade__incorrect','grade__correct','grade__excercice_time',
+                'grade__video_time','grade__struggling','grade__practiced','grade__mastery1','grade__mastery2','grade__mastery3')
+        except Exception as e:
+            print '***ERROR*** Ha fallado la query linea 424'
+            print e
+
+        totalGrades = grades.count()
+
+        #crea el arreglo inicial
+        w, h = totalFields +10 ,totalGrades + delta + 10
+        data = [['' for x in range(w)] for y in range(h)] 
+        print '***************debug******************'
+        print assesment
+        
+        data[0][0] = 'Evaluacion'
+        data[0][1] = assesment.name
+        data[1][0] = 'Nota Minima'
+        data[1][1] = assesment.min_grade
+        data[2][0] = 'Nota Maxima'
+        data[2][1] = assesment.max_grade
+        data[3][0] = 'Nota de Aprobacion'
+        data[3][1] = assesment.approval_grade
+        data[4][0] = 'Bonificacion por Esfuerzo'
+        data[4][1] = assesment.max_effort_bonus
+        #carga las notas y las variables disponibles en grade
+        for k in range(totalFields):
+            data[delta-1][k] = viewFields[k]
+        for i in range(totalGrades):
+            for j in range(totalFields):
+                if j==0:
+                    data[i+delta][j] = grades[i]['name']
+                if j==1:
+                    data[i+delta][j] = grades[i]['grade__recomended_complete']
+                if j==2:
+                    data[i+delta][j] = grades[i]['grade__incorrect']
+                if j==3:
+                    data[i+delta][j] = grades[i]['grade__correct']
+                if j==4:
+                    data[i+delta][j] = grades[i]['grade__excercice_time']
+                if j==5:
+                    data[i+delta][j] = grades[i]['grade__video_time']
+                if j==6:
+                    data[i+delta][j] = grades[i]['grade__struggling']
+                if j==7:
+                    data[i+delta][j] = grades[i]['grade__practiced']
+                if j==8:
+                    data[i+delta][j] = grades[i]['grade__mastery1']
+                if j==9:
+                    data[i+delta][j] = grades[i]['grade__mastery2']
+                if j==10:
+                    data[i+delta][j] = grades[i]['grade__mastery3']
+                elif j==11:
+                    data[i+delta][j] = grades[i]['grade__grade']
+                elif j==12:
+                    data[i+delta][j] = grades[i]['grade__bonus_grade']
+        try:
+            response = excel.make_response(pe.Sheet(data), 'xls', file_name=assesment.name)
+        except Exception as e:
+            print '***ERROR*** no se ha podido generar la respuesta excel'
+            print e
+            response = False
+        return response
 
 
 def getSkillAssesment(request,id_class):
@@ -218,8 +309,9 @@ def getSkillsCorrect(grade_id):
 def getClassStudents(request, id_class):
     #Esta funcion entrega todos los estudiantes que pertenecen a un curso determinado y carga el dashboard
     request.session.set_expiry(timeSleep)#10 minutos
+    id_institition_request=Teacher.objects.filter(kaid_teacher=request.user.user_profile.kaid).values('id_institution_id')
     if(request.user.has_perm('bakhanapp.isAdmin')):
-        classes = Class.objects.filter(id_institution_id=Teacher.objects.filter(kaid_teacher=request.user.user_profile.kaid).values('id_institution_id'))
+        classes = Class.objects.filter(id_institution_id=id_institition_request)
     else:
         classes = Class.objects.filter(id_class__in=Class_Subject.objects.filter(kaid_teacher=request.user.user_profile.kaid).values('id_class'))
     N = ['kinder','1ro basico','2do basico','3ro basico','4to basico','5to basico','6to basico','7mo basico','8vo basico','1ro medio','2do medio','3ro medio','4to medio']
@@ -399,11 +491,13 @@ def getClassStudents(request, id_class):
             classroom = Class.objects.filter(id_class=id_class)
             if (Class_Subject.objects.filter(kaid_teacher=request.user.user_profile.kaid,id_class_id=id_class)):
                 isTeacher = True
+                assesment_configs = Assesment_Config.objects.filter(kaid_teacher=request.user.user_profile.kaid)
             else:
                 isTeacher = False
+                assesment_configs = Assesment_Config.objects.filter(kaid_teacher_id__in=Teacher.objects.filter(id_institution_id=id_institition_request))
             spanish_classroom = N[int(classroom[0].level)] +' '+ classroom[0].letter
             s_skills = getClassSkills(request,id_class)
-            assesment_configs = Assesment_Config.objects.filter(kaid_teacher=request.user.user_profile.kaid)
+            
             return render_to_response('studentClass.html',
                                         {'students': students, 'classroom': classroom,'jason_data': json_data, 'classes': classes,
                                         's_skills':s_skills, 'assesment_configs':assesment_configs,'spanish_classroom':spanish_classroom,'isTeacher':isTeacher}, #'grades':grades,
@@ -411,7 +505,9 @@ def getClassStudents(request, id_class):
                                     )
         else:
             return HttpResponseRedirect("/inicio")
-    except:
+    except Exception as e:
+        print '***ERROR*** no se ha podido cargar el dashboard'
+        print e
         return HttpResponseRedirect("/inicio")
 
 
