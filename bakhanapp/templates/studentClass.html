@@ -1722,6 +1722,7 @@
 					document.getElementById("input_id_config").value = "{{config.id_assesment_config}}";
 				}
 			{% endfor %}
+			//console.log(id);
 			fillSkills(id);
 			{% for class in classroom %}
 				document.getElementById("input_id_class").value = "{{class.id_class}}";
@@ -1729,18 +1730,26 @@
 		};
 		
 		function fillSkills(id_config){
+			//console.log("entra al fillskills");
+			//console.log(id_config);
 			$.ajax({
 				url: "{% url 'evaluations:getSkillAssesment' 1 %}",
 				type: "POST",
 				data: {id_asses_config: id_config},
 				success: function (response) {
+					console.log("success");
 					skills = JSON.parse(response);
+					console.log(skills);
 					$("#skills").empty();
 					$("#skills").append("<div><strong>Habilidades</strong></div>");
 					for(var i=0;i<skills.length;i++){
+						console.log(skills[i]);
 						$("#skills").append("<div><IMG style='width:13px;height:13px;margin-right:5px' SRC='{% static 'img/check.svg'%}'>"+skills[i]['fields']['name_spanish']+"</div>");					
 					}
-				}
+				},
+				error : function(xhr, status) {
+			        alert('Disculpe, existió un problema');
+			    }
 			});
 		}
 		

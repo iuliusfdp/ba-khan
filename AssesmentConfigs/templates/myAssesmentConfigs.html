@@ -23,8 +23,8 @@ function getTopicTree(id){
 		    for (i=0;i< selected_skills.length;i++){
 		    	//console.log(selected_skills[i]);
 		    	if (selected_skills[i].id){
-		    		//console.log("entro al if");
-		    		selected_skills_id.push({'skill_id':selected_skills[i].id,id:selected_skills[i].id});
+		    		console.log(selected_skills[i].data.skill_id);
+		    		selected_skills_id.push({'skill_id':selected_skills[i].data.skill_id,id:selected_skills[i].parent});
 		    		//selected_subtopic_skill.push(selected_skills[i].id);
 		    	}
 		    }

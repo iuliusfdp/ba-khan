@@ -326,12 +326,15 @@ def getCurso(id_class):
     respuesta = cursoStr+" "+letra
     return(respuesta)
 
-def getSkillAssesment(id_asses_config): #recibe la configuracion y devuelve el html con todas las skill (un <p> por skill)
+#recibe la configuracion y devuelve el html con todas las skill (un <p> por skill)
+def getSkillAssesment(id_asses_config):
     mnsj_skills = ''
-    g = Assesment_Skill.objects.filter(id_assesment_config=id_asses_config).values('id_skill_name_id')
+    g = Assesment_Skill.objects.filter(id_assesment_config=id_asses_config).values('id_skill_name')
     n = Skill.objects.filter(id_skill_name__in=g)
     for i in n :
         skill = str(i)
         skill = strip_accents(skill)
         mnsj_skills = mnsj_skills+'<p style="font-family:"Helvetica Neue",Calibri,Helvetica,Arial,sans-serif; font-size:16px; line-height:24px; color:#666; margin:0 0 10px; font-size:14px; color:#333">'+skill+'</p>'
+
+        
     return mnsj_skills

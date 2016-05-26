@@ -51,6 +51,7 @@ class Student(models.Model):
     email = models.EmailField(max_length=50,null=True)
     phone = models.IntegerField(null=True)
     points = models.IntegerField()
+    id_institution = models.IntegerField()
     
     def __unicode__(self): # __unicode__ on Python 2
         return self.name
@@ -148,9 +149,9 @@ class Subtopic(models.Model):
         return self.name_spanish
 
 class Skill(models.Model):
-    id_skill_name = models.CharField(max_length=150,primary_key=True)
     name_spanish = models.CharField(max_length=150,null=True)
-    name = models.CharField(max_length=150,null=True)
+    name = models.CharField(primary_key=True, max_length=150)
+    id_khan = models.CharField(max_length=50)
     
     def __unicode__(self): # __unicode__ on Python 2
         return self.name_spanish
@@ -278,10 +279,12 @@ class Video_Playing(models.Model):
 
 class Skill_Progress(models.Model):
     id_skill_progress = models.AutoField(primary_key=True)
-    id_student_skill = models.ForeignKey(Student_Skill)
     to_level = models.CharField(max_length=50)
     from_level = models.CharField(max_length=50)
     date = models.DateTimeField()
+    id_skill_name = models.CharField(max_length=100)
+    kaid_student = models.CharField(max_length=40)
+    id_student_skill = models.ForeignKey(Student_Skill)
     
     class Meta:
       ordering = ['-date']
@@ -305,8 +308,8 @@ class Subtopic_Skill(models.Model):
 class Assesment_Skill(models.Model):
     id_assesment_skill = models.AutoField(primary_key=True)
     id_assesment_config = models.ForeignKey(Assesment_Config)
-    id_skill_name = models.ForeignKey(Skill)
-    id_subtopic_skill = models.ForeignKey(Subtopic_Skill)
+    id_skill_name = models.CharField(max_length=150)
+    id_subtopic_skill = models.CharField(max_length=150)
     
     class Meta:
         unique_together = ('id_assesment_config', 'id_skill_name')

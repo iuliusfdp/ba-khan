@@ -73,8 +73,12 @@ def getSkillAssesment(request,id_class):
     if request.method == 'POST':
         args = request.POST
         id_asses_config = args['id_asses_config']
-        g = Assesment_Skill.objects.filter(id_assesment_config=id_asses_config).values('id_skill_name_id')
-        n = Skill.objects.filter(id_skill_name__in=g)
+        g = Assesment_Skill.objects.filter(id_assesment_config=id_asses_config).values('id_skill_name')
+        print g
+        n = Skill.objects.filter(name__in=g)
+        print "abajo esta el n"
+        print n
+        print "arriba esta el n"
         data = serializers.serialize('json', n)
         struct = json.loads(data)
         skills = json.dumps(struct)
@@ -481,7 +485,7 @@ def getTopictree(subject):
     id=0
     for skill in subtopic_skill:
         skill_id=skill.id_subtopic_skill
-        skill_obj={"id":skill_id, "parent":skill.id_subtopic_name_id, "text": skill.id_skill_name.name_spanish, "data":{"skill_id":skill.id_skill_name.id_skill_name}, "icon":"false"}
+        skill_obj={"id":skill_id, "parent":skill.id_subtopic_name_id, "text": skill.id_skill_name.name_spanish, "data":{"skill_id":skill.id_skill_name.name}, "icon":"false"}
         topictree.append(skill_obj)
         id=id+1
     #print("--- %s seconds ---" % (time.time() - start_time))
