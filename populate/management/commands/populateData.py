@@ -573,10 +573,16 @@ def coach_students(session, id_institution): #ver los estudiantes que tienen com
     data = simplejson.loads(source)
     for j in range(len(data)):
         try:
+<<<<<<< HEAD
             new_student = Student(kaid_student=data[j]["kaid"],name=data[j]["username"],email=data[j]["username"],points=data[j]["points"],phone=0, id_institution=id_institution)
             new_student.save()
         except Exception as e:
             print e
+=======
+            new_student = Student(kaid_student=data[j]["kaid"],name=data[j]["username"],email=data[j]["username"],points=data[j]["points"],phone=0)
+            new_student.save()
+        except:
+>>>>>>> origin/master
             logging.debug("error con estudiante "+data[j]["username"])
 
 def poblar_students(session):
@@ -680,7 +686,14 @@ class Command(BaseCommand):
             passes = inst.password
 
             session = run_tests(identifiers,passes,keys,secrets)
+<<<<<<< HEAD
             #coach_students(session, inst.id_institution)
+=======
+
+            # CARGAR ESTUDIANTES NUEVOS
+            #coach_students(session)
+
+>>>>>>> origin/master
             #print "logueadoooo"
             #jason = get_api_resource2(session,"/api/v1/exercises",SERVER_URL2)
             #source = unicode(jason, 'ISO-8859-1')
